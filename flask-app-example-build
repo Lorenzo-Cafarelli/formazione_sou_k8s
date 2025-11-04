@@ -2,8 +2,8 @@
  * Pipeline dichiarativa di Jenkins
  * Esegue la build Docker usando Ansible sull'agente.
  *
- * *** VERSIONE DI DEBUG (Sintassi Corretta) ***
- * Include uno stage per stampare il PATH dell'agente.
+ * *** VERSIONE DI DEBUG 2 (Sintassi Corretta) ***
+ * Controlla l'esistenza del file in /usr/bin
  */
 pipeline {
     options {
@@ -25,16 +25,16 @@ pipeline {
             steps {
                 echo "--- INIZIO DEBUG AMBIENTE AGENTE ---"
                 
-                // Stampa il PATH esatto che l'agente sta usando
-                // Usiamo ''' per passare la stringa letteralmente alla shell
                 sh '''echo "PATH dell'agente: $PATH"'''
                 
-                // Stampa l'utente con cui gira l'agente
                 sh '''echo "Utente agente: $(whoami)"'''
 
-                // Prova a trovare ansible-playbook con 'which'
-                // (Questa era la riga con l'errore, ora corretta)
-                sh '''echo "Posizione ansible (da which): $(which ansible-playbook || echo \"ansible-playbook non trovato dal comando which\")"'''
+                // NUOVO DEBUG: Controlliamo se il file esiste in /usr/bin
+                // e quali permessi ha, dal punto di vista dell'utente 'jenkins'
+                echo "Controllo l'esistenza e i permessi di ansible-playbook in /usr/bin..."
+                sh '''
+                    ls -l /usr/bin/ansible* || echo "Nessun file 'ansible*' trovato in /usr/bin"
+                '''
                 
                 echo "--- FINE DEBUG AMBIENTE AGENTE ---"
             }
