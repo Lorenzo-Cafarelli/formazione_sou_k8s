@@ -2,7 +2,7 @@
  * Pipeline dichiarativa di Jenkins
  * Esegue la build Docker usando Ansible sull'agente.
  *
- * *** VERSIONE DI DEBUG ***
+ * *** VERSIONE DI DEBUG (Sintassi Corretta) ***
  * Include uno stage per stampare il PATH dell'agente.
  */
 pipeline {
@@ -21,20 +21,20 @@ pipeline {
     stages {
 
         // --- STAGE DI DEBUG ---
-        // Questo stage stamperà le variabili d'ambiente
-        // prima di provare a eseguire la build.
         stage('Debug Environment') {
             steps {
                 echo "--- INIZIO DEBUG AMBIENTE AGENTE ---"
                 
                 // Stampa il PATH esatto che l'agente sta usando
-                sh 'echo "PATH dell\'agente: $PATH"'
+                // Usiamo ''' per passare la stringa letteralmente alla shell
+                sh '''echo "PATH dell'agente: $PATH"'''
                 
                 // Stampa l'utente con cui gira l'agente
-                sh 'echo "Utente agente: $(whoami)"'
+                sh '''echo "Utente agente: $(whoami)"'''
 
                 // Prova a trovare ansible-playbook con 'which'
-                sh 'echo "Posizione ansible (da which): $(which ansible-playbook || echo 'ansible-playbook non trovato dal comando which')" '
+                // (Questa era la riga con l'errore, ora corretta)
+                sh '''echo "Posizione ansible (da which): $(which ansible-playbook || echo \"ansible-playbook non trovato dal comando which\")"'''
                 
                 echo "--- FINE DEBUG AMBIENTE AGENTE ---"
             }
@@ -45,8 +45,6 @@ pipeline {
             steps {
                 echo "Avvio il playbook Ansible per costruire l'immagine: ${IMAGE_NAME}:${IMAGE_TAG}"
                 
-                // Usiamo la chiamata "pulita" (senza percorso assoluto)
-                // Fallirà, ma il log di debug sopra ci dirà perché.
                 sh """
                     ansible-playbook build-playbook.yml \
                         -e "image_name=${IMAGE_NAME}" \
