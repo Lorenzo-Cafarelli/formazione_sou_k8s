@@ -3,13 +3,15 @@
  * Esegue la build Docker usando Ansible sull'agente.
  */
 pipeline {
-    // ... (tutto il resto uguale) ...
+    // ... (opzioni buildDiscarder e timestamps) ...
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+    }
+
     agent any
 
     environment {
-        // NOTA: Ho visto che il log usa 'flask-hello-world'.
-        // Assicurati che il nome qui e nel repo sia coerente.
-        // Lo aggiorno per rispecchiare il tuo log.
         IMAGE_NAME = 'flask-hello-world'
         IMAGE_TAG = "build-${BUILD_NUMBER}" 
     }
@@ -20,11 +22,11 @@ pipeline {
             steps {
                 echo "Avvio il playbook Ansible per costruire l'immagine: ${IMAGE_NAME}:${IMAGE_TAG}"
                 
-                // --- MODIFICA FONDAMENTALE QUI ---
-                // Esegue il comando ansible-playbook
-                // -e passa le variabili d'ambiente di Jenkins al playbook
+                // --- MODIFICA FONDAMENTALE ---
+                // Rimuoviamo il percorso assoluto. Ora funzionerà
+                // perché imposteremo la variabile PATH sull'agente.
                 sh """
-                    /usr/bin/ansible-playbook \
+                    ansible-playbook build-playbook.yml \
                         -e "image_name=${IMAGE_NAME}" \
                         -e "image_tag=${IMAGE_TAG}"
                 """
@@ -44,4 +46,3 @@ pipeline {
         }
     }
 }
-
