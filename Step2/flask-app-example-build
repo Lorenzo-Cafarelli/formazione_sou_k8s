@@ -19,6 +19,21 @@ pipeline {
         CLI = '/usr/bin/podman' 
     }
 
+    stage('Preparazione e Build Immagine') {
+    steps {
+        echo "=========================================================="
+        echo "DIAGNOSI: RICERCA DEL PERCORSO DI PODMAN"
+        echo "=========================================================="
+        
+        // Cerca l'eseguibile di Podman nell'intero sistema
+        sh "find / -name podman 2>/dev/null"
+        
+        echo "Esecuzione completata. Cerca i percorsi nell'output qui sopra."
+    }
+}
+// Rimuovi o commenta gli stage successivi per evitare fallimenti
+
+/*
     stages {
         stage('Preparazione e Build Immagine') {
             steps {
@@ -32,7 +47,7 @@ pipeline {
                 echo "✅ Build immagine completato con successo."
             }
         }
-        
+
         stage('Login e Push su Registry') {
             steps {
                 // Utilizza withCredentials per accedere in modo sicuro alle credenziali
@@ -64,4 +79,6 @@ pipeline {
             }
         }
     }
+}
+*/
 }
