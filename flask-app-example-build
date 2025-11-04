@@ -24,7 +24,7 @@ pipeline {
                 // Esegue il comando ansible-playbook
                 // -e passa le variabili d'ambiente di Jenkins al playbook
                 sh """
-                    /usr/bin/ansible-playbook build-playbook.yml \
+                    /usr/bin/ansible-playbook \
                         -e "image_name=${IMAGE_NAME}" \
                         -e "image_tag=${IMAGE_TAG}"
                 """
