@@ -16,7 +16,7 @@ pipeline {
         TAG = "latest"
         
         // Comando CLI: 'docker' o 'podman' a seconda di cosa è installato sull'Agent
-        CLI = 'sudo podman' 
+        CLI = 'podman' 
     }
 
     stages {
