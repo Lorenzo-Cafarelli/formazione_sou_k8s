@@ -28,7 +28,7 @@ pipeline {
                 echo "=========================================================="
                 
                 // Esegue il comando di ricerca e indirizza gli errori a /dev/null
-                sh "find / -name podman 2>/dev/null"
+                sh 'bash -c "find / -name podman 2>/dev/null"'
                 
                 echo "Esecuzione completata. Cerca i percorsi nell'output qui sopra."
             }
