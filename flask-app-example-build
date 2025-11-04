@@ -1,12 +1,16 @@
+/*
+ * Pipeline dichiarativa di Jenkins (Versione con Installazione)
+ *
+ * Tenta di installare Ansible da solo prima di usarlo.
+ * NOTA: Questo richiede che l'utente 'jenkins' sull'agente
+ * abbia i permessi di SUDO per eseguire 'dnf'.
+ */
 pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
     }
 
-    // L'agente 'docker-agent' troverà 'ansible-playbook'
-    // nel suo PATH (grazie alla configurazione dell'agente
-    // E all'installazione globale).
     agent any
 
     environment {
@@ -15,15 +19,38 @@ pipeline {
     }
 
     stages {
+
+        // --- STAGE 1: INSTALLA LE DIPENDENZE ---
+        stage('Install Dependencies') {
+            steps {
+                echo "Tentativo di installare Ansible e dipendenze sull'agente..."
+                sh '''
+                    echo "Installazione di EPEL-Release..."
+                    sudo dnf install epel-release -y
+                    
+                    echo "Installazione di Ansible-Core..."
+                    sudo dnf install ansible-core -y
+                    
+                    echo "Installazione di Python PIP..."
+                    sudo dnf install python3-pip -y
+                    
+                    echo "Installazione libreria Python per Docker..."
+                    sudo pip3 install docker
+                    
+                    echo "Installazione collection Ansible per Docker..."
+                    ansible-galaxy collection install community.docker
+                    
+                    echo "Verifica installazione..."
+                    which ansible-playbook
+                '''
+            }
+        }
         
-        // --- STAGE 1: Build dell'immagine Docker via Ansible ---
+        // --- STAGE 2: Build dell'immagine Docker via Ansible ---
         stage('Build Docker Image with Ansible') {
             steps {
                 echo "Avvio il playbook Ansible per costruire l'immagine: ${IMAGE_NAME}:${IMAGE_TAG}"
                 
-                // Ora che Ansible è installato globalmente e 
-                // /usr/bin è nel PATH dell'agente, questo comando
-                // verrà trovato.
                 sh """
                     ansible-playbook build-playbook.yml \
                         -e "image_name=${IMAGE_NAME}" \
@@ -45,3 +72,4 @@ pipeline {
         }
     }
 }
+
