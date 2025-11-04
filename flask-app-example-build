@@ -1,16 +1,12 @@
-/*
- * Pipeline dichiarativa di Jenkins
- * Esegue la build Docker usando Ansible sull'agente.
- *
- * *** VERSIONE DI DEBUG 2 (Sintassi Corretta) ***
- * Controlla l'esistenza del file in /usr/bin
- */
 pipeline {
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
     }
 
+    // L'agente 'docker-agent' troverà 'ansible-playbook'
+    // nel suo PATH (grazie alla configurazione dell'agente
+    // E all'installazione globale).
     agent any
 
     environment {
@@ -19,32 +15,15 @@ pipeline {
     }
 
     stages {
-
-        // --- STAGE DI DEBUG ---
-        stage('Debug Environment') {
-            steps {
-                echo "--- INIZIO DEBUG AMBIENTE AGENTE ---"
-                
-                sh '''echo "PATH dell'agente: $PATH"'''
-                
-                sh '''echo "Utente agente: $(whoami)"'''
-
-                // NUOVO DEBUG: Controlliamo se il file esiste in /usr/bin
-                // e quali permessi ha, dal punto di vista dell'utente 'jenkins'
-                echo "Controllo l'esistenza e i permessi di ansible-playbook in /usr/bin..."
-                sh '''
-                    ls -l /usr/bin/ansible* || echo "Nessun file 'ansible*' trovato in /usr/bin"
-                '''
-                
-                echo "--- FINE DEBUG AMBIENTE AGENTE ---"
-            }
-        }
         
-        // --- STAGE 2: Build dell'immagine Docker via Ansible ---
+        // --- STAGE 1: Build dell'immagine Docker via Ansible ---
         stage('Build Docker Image with Ansible') {
             steps {
                 echo "Avvio il playbook Ansible per costruire l'immagine: ${IMAGE_NAME}:${IMAGE_TAG}"
                 
+                // Ora che Ansible è installato globalmente e 
+                // /usr/bin è nel PATH dell'agente, questo comando
+                // verrà trovato.
                 sh """
                     ansible-playbook build-playbook.yml \
                         -e "image_name=${IMAGE_NAME}" \
@@ -66,4 +45,3 @@ pipeline {
         }
     }
 }
-
