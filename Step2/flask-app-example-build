@@ -1,4 +1,4 @@
-// File: Step2/Jenkinsfile
+// File: Step2/Jenkinsfile (Struttura corretta per la Diagnosi)
 pipeline {
     // Definizione del nodo su cui verrà eseguito il lavoro
     agent { 
@@ -15,22 +15,24 @@ pipeline {
         DOCKER_IMAGE_NAME = "lorenzocafarelli/flask-hello-world"
         TAG = "latest"
         
-        // Comando CLI: 'docker' o 'podman' a seconda di cosa è installato sull'Agent
+        // Comando CLI: Inserisci qui il percorso che pensi sia corretto
         CLI = '/usr/bin/podman' 
     }
 
-    stage('Preparazione e Build Immagine') {
-    steps {
-        echo "=========================================================="
-        echo "DIAGNOSI: RICERCA DEL PERCORSO DI PODMAN"
-        echo "=========================================================="
+    stages { // <-- IL CONTENITORE DEVE ESSERE QUI
         
-        // Cerca l'eseguibile di Podman nell'intero sistema
-        sh "find / -name podman 2>/dev/null"
-        
-        echo "Esecuzione completata. Cerca i percorsi nell'output qui sopra."
-    }
-}
+        stage('DIAGNOSI: Ricerca del Percorso') {
+            steps {
+                echo "=========================================================="
+                echo "DIAGNOSI: RICERCA DEL PERCORSO DI PODMAN"
+                echo "=========================================================="
+                
+                // Esegue il comando di ricerca e indirizza gli errori a /dev/null
+                sh "find / -name podman 2>/dev/null"
+                
+                echo "Esecuzione completata. Cerca i percorsi nell'output qui sopra."
+            }
+        }
 // Rimuovi o commenta gli stage successivi per evitare fallimenti
 
 /*
@@ -81,4 +83,5 @@ pipeline {
     }
 }
 */
+}
 }
