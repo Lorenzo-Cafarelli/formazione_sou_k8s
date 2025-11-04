@@ -1,75 +1,64 @@
 /*
- * Pipeline dichiarativa di Jenkins (Versione con Installazione)
- *
- * Tenta di installare Ansible da solo prima di usarlo.
- * NOTA: Questo richiede che l'utente 'jenkins' sull'agente
- * abbia i permessi di SUDO per eseguire 'dnf'.
+ * Pipeline dichiarativa di Jenkins (Versione Corretta)
+ * Eseguita dall'agente personalizzato che ha 'podman' installato.
  */
 pipeline {
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        timestamps()
-    }
-
-    agent any
+    // L'agente è 'docker-agent' (il nostro container personalizzato)
+    agent { 
+        label 'docker-agent' 
+    } 
 
     environment {
-        IMAGE_NAME = 'flask-hello-world'
-        IMAGE_TAG = "build-${BUILD_NUMBER}" 
+        // ⚠️ SOSTITUISCI CON IL TUO UTENTE/NOME IMMAGINE
+        DOCKER_IMAGE_NAME = "lorenzocafarelli/flask-hello-world"
+        TAG = "build-${BUILD_NUMBER}" // Usa un tag univoco
+        
+        // Non serve 'sudo' o 'withEnv'
+        // L'agente ha 'podman' nel suo PATH.
+        CLI = 'podman' 
     }
 
     stages {
-
-        // --- STAGE 1: INSTALLA LE DIPENDENZE ---
-        stage('Install Dependencies') {
+        stage('Preparazione e Build Immagine') {
             steps {
-                echo "Tentativo di installare Ansible e dipendenze sull'agente..."
-                sh '''
-                    echo "Installazione di EPEL-Release..."
-                    sudo dnf install epel-release -y
-                    
-                    echo "Installazione di Ansible-Core..."
-                    sudo dnf install ansible-core -y
-                    
-                    echo "Installazione di Python PIP..."
-                    sudo dnf install python3-pip -y
-                    
-                    echo "Installazione libreria Python per Docker..."
-                    sudo pip3 install docker
-                    
-                    echo "Installazione collection Ansible per Docker..."
-                    ansible-galaxy collection install community.docker
-                    
-                    echo "Verifica installazione..."
-                    which ansible-playbook
-                '''
+                echo "FASE 1: Avvio Build (con Podman-in-Podman)"
+                echo "Immagine target: ${DOCKER_IMAGE_NAME}:${TAG}"
+                
+                // Esegue il build. Funzionerà perché l'agente 
+                // ha 'podman' e accesso al socket.
+                sh "${CLI} build -t ${DOCKER_IMAGE_NAME}:${TAG} ."
+                
+                echo "✅ Build immagine completato con successo."
             }
         }
         
-        // --- STAGE 2: Build dell'immagine Docker via Ansible ---
-        stage('Build Docker Image with Ansible') {
+        stage('Login e Push su Docker Hub') {
             steps {
-                echo "Avvio il playbook Ansible per costruire l'immagine: ${IMAGE_NAME}:${IMAGE_TAG}"
-                
-                sh """
-                    ansible-playbook build-playbook.yml \
-                        -e "image_name=${IMAGE_NAME}" \
-                        -e "image_tag=${IMAGE_TAG}"
-                """
-                
-                echo "Build dell'immagine Docker completata con successo."
+                // Usa le credenziali Jenkins (ID 'docker-creds')
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-creds', 
+                    passwordVariable: '49722184cd0b40f9814da903f3522f1d', 
+                    usernameVariable: 'admin'
+                )]) {
+                    
+                    echo "FASE 2: Esecuzione del Login e del Push."
+                    echo "Tentativo di login per l'utente ${DOCKER_USER}..."
+                    
+                    // Login
+                    sh "${CLI} login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD} docker.io"
+
+                    echo "Login completato. Inizio Push dell'immagine."
+                    
+                    // Push
+                    sh "${CLI} push ${DOCKER_IMAGE_NAME}:${TAG}"
+                    
+                    echo "✅ Push completato su Docker Hub."
+                    
+                    // Logout
+                    sh "${CLI} logout docker.io"
+                    echo "Logout effettuato."
+                }
             }
         }
     }
-    
-    // Azioni da eseguire al termine della pipeline
-    post {
-        success {
-            echo "Pipeline flask-app-example-build completata con successo."
-        }
-        failure {
-            echo "Pipeline flask-app-example-build fallita."
-        }
-    }
 }
-
