@@ -1,3 +1,5 @@
+/*
+
 // File: Step2/Jenkinsfile (Struttura corretta per la Diagnosi)
 pipeline {
     // Definizione del nodo su cui verrà eseguito il lavoro
@@ -83,5 +85,86 @@ pipeline {
     }
 }
 */
-}
+
+// File: Step2/Jenkinsfile
+pipeline {
+    // Definizione del nodo su cui verrà eseguito il lavoro
+    agent { 
+        // L'etichetta dell'agente che hai configurato sulla VM Rocky Linux
+        label 'docker-agent' 
+    } 
+
+    // Variabili d'ambiente per il processo
+    environment {
+        // ID della credenziale Jenkins per Docker Hub (configurato in 'Manage Credentials')
+        DOCKERHUB_CREDENTIALS = credentials('docker-creds') 
+        
+        // ⚠️ SOSTITUISCI CON IL TUO UTENTE/NOME IMMAGINE E REGISTRY
+        DOCKER_IMAGE_NAME = "lorenzocafarelli/flask-hello-world"
+        TAG = "latest"
+        
+        // Usiamo solo il nome del comando (Podman). Il PATH sarà corretto nello step successivo.
+        CLI = 'podman' 
+    }
+
+    stages {
+        stage('Preparazione e Build Immagine') {
+            steps {
+                echo "=========================================================="
+                echo "FASE 1: Avvio del Build dell'immagine Flask."
+                echo "Immagine target: ${DOCKER_IMAGE_NAME}:${TAG}"
+                echo "=========================================================="
+                
+                // CRITICAL FIX: Aggiunge /usr/bin (dove si trova podman su Rocky Linux) al PATH di esecuzione
+                withEnv(['PATH+PODMAN=/usr/bin']) {
+                    
+                    // Stampa il PATH aggiornato per la verifica
+                    sh 'echo "PATH AGGIORNATO: $PATH"' 
+                    
+                    // Esegue il build dell'immagine. Il '.' indica la directory corrente.
+                    sh "${CLI} build -t ${DOCKER_IMAGE_NAME}:${TAG} ."
+                }
+                echo "✅ Build immagine completato con successo."
+            }
+        }
+        
+        stage('Login e Push su Registry') {
+            steps {
+                // Utilizza withCredentials per accedere in modo sicuro alle credenziali
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-creds', 
+                    passwordVariable: 'ASroma1927', 
+                    usernameVariable: 'lorenzocafarelli'
+                )]) {
+                    
+                    echo "=========================================================="
+                    echo "FASE 2: Esecuzione del Login e del Push."
+                    echo "Tentativo di login per l'utente ${DOCKER_USER}..."
+                    
+                    // CRITICAL FIX: Usa withEnv per il comando sh
+                    withEnv(['PATH+PODMAN=/usr/bin']) {
+                        // Login al Registry (Docker Hub)
+                        sh "${CLI} login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}"
+                    }
+
+                    echo "Login completato. Inizio Push dell'immagine."
+                    
+                    // CRITICAL FIX: Usa withEnv per il comando sh
+                    withEnv(['PATH+PODMAN=/usr/bin']) {
+                        // Push dell'immagine taggata
+                        sh "${CLI} push ${DOCKER_IMAGE_NAME}:${TAG}"
+                    }
+                    
+                    echo "✅ Push completato su Docker Hub."
+                    
+                    // Logout per sicurezza dopo il push
+                    withEnv(['PATH+PODMAN=/usr/bin']) {
+                        sh "${CLI} logout"
+                    }
+                    echo "Logout effettuato."
+                    echo "=========================================================="
+                }
+            }
+        }
+    }
 }
