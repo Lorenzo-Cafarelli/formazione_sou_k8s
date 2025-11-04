@@ -1,57 +1,66 @@
-// Variabili d'ambiente per il processo
-environment {
-    // ID della credenziale Jenkins per Docker Hub (configurato in 'Manage Credentials')
-    DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') 
-    
-    // ⚠️ SOSTITUISCI CON IL TUO UTENTE/NOME IMMAGINE E REGISTRY
-    DOCKER_IMAGE_NAME = "lorenzocafarelli/flask-hello-world"
-    TAG = "latest"
-    
-    // Comando CLI: 'docker' o 'podman' a seconda di cosa è installato sull'Agent
-    CLI = 'sudo podman' 
-}
+// File: Step2/Jenkinsfile
+pipeline {
+    // Definizione del nodo su cui verrà eseguito il lavoro
+    agent { 
+        // L'agente deve avere l'etichetta 'docker-agent' (quello che hai installato)
+        label 'docker-agent' 
+    } 
 
-stages {
-    stage('Preparazione e Build Immagine') {
-        steps {
-            echo "=========================================================="
-            echo "FASE 1: Avvio del Build dell'immagine Flask."
-            echo "Immagine target: ${DOCKER_IMAGE_NAME}:${TAG}"
-            echo "=========================================================="
-            
-            // Esegue il comando di build. Il '.' indica la directory corrente.
-            sh "${CLI} build -t ${DOCKER_IMAGE_NAME}:${TAG} ."
-            echo "✅ Build immagine completato con successo."
-        }
+    // Variabili d'ambiente per il processo
+    environment {
+        // ID della credenziale Jenkins per Docker Hub (configurato in 'Manage Credentials')
+        DOCKERHUB_CREDENTIALS = credentials('docker-creds') 
+        
+        // ⚠️ SOSTITUISCI CON IL TUO UTENTE/NOME IMMAGINE E REGISTRY
+        DOCKER_IMAGE_NAME = "lorenzocafarelli/flask-hello-world"
+        TAG = "latest"
+        
+        // Comando CLI: 'docker' o 'podman' a seconda di cosa è installato sull'Agent
+        CLI = 'sudo podman' 
     }
-    
-    stage('Login e Push su Registry') {
-        steps {
-            // Utilizza withCredentials per accedere in modo sicuro alle credenziali
-            withCredentials([usernamePassword(
-                credentialsId: 'docker-hub-credentials', 
-                passwordVariable: 'DOCKER_PASSWORD', 
-                usernameVariable: 'DOCKER_USER'
-            )]) {
-                
+
+    stages {
+        stage('Preparazione e Build Immagine') {
+            steps {
                 echo "=========================================================="
-                echo "FASE 2: Esecuzione del Login e del Push."
-                echo "Tentativo di login per l'utente ${DOCKER_USER}..."
-                
-                // Login al Registry (Docker Hub)
-                sh "${CLI} login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}"
-                
-                echo "Login completato. Inizio Push dell'immagine."
-                
-                // Push dell'immagine taggata
-                sh "${CLI} push ${DOCKER_IMAGE_NAME}:${TAG}"
-                
-                echo "✅ Push completato su Docker Hub."
-                
-                // Logout per sicurezza dopo il push
-                sh "${CLI} logout"
-                echo "Logout effettuato."
+                echo "FASE 1: Avvio del Build dell'immagine Flask."
+                echo "Immagine target: ${DOCKER_IMAGE_NAME}:${TAG}"
                 echo "=========================================================="
+                
+                // Esegue il comando di build. Il '.' indica la directory corrente.
+                sh "${CLI} build -t ${DOCKER_IMAGE_NAME}:${TAG} ."
+                echo "✅ Build immagine completato con successo."
+            }
+        }
+        
+        stage('Login e Push su Registry') {
+            steps {
+                // Utilizza withCredentials per accedere in modo sicuro alle credenziali
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-credentials', 
+                    passwordVariable: 'DOCKER_PASSWORD', 
+                    usernameVariable: 'DOCKER_USER'
+                )]) {
+                    
+                    echo "=========================================================="
+                    echo "FASE 2: Esecuzione del Login e del Push."
+                    echo "Tentativo di login per l'utente ${DOCKER_USER}..."
+                    
+                    // Login al Registry (Docker Hub)
+                    sh "${CLI} login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}"
+                    
+                    echo "Login completato. Inizio Push dell'immagine."
+                    
+                    // Push dell'immagine taggata
+                    sh "${CLI} push ${DOCKER_IMAGE_NAME}:${TAG}"
+                    
+                    echo "✅ Push completato su Docker Hub."
+                    
+                    // Logout per sicurezza dopo il push
+                    sh "${CLI} logout"
+                    echo "Logout effettuato."
+                    echo "=========================================================="
+                }
             }
         }
     }
