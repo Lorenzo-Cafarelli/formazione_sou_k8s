@@ -17,21 +17,28 @@ pipeline {
         stage('Set Image Tag') {
             steps {
                 script {
+                    // Assicuriamoci che BRANCH_NAME abbia un valore, anche se di default
+                    def currentBranch = env.BRANCH_NAME ?: 'unknown-branch'
+                    
                     if (env.TAG_NAME) {
                         env.IMAGE_TAG = env.TAG_NAME
-                    } else if (env.BRANCH_NAME == 'main') {
+                    } else if (currentBranch == 'main') {
                         env.IMAGE_TAG = 'latest'
-                    } else if (env.BRANCH_NAME == 'develop') {
-                        env.IMAGE_TAG = "develop-${env.GIT_COMMIT.substring(0, 7)}"
+                    } else if (currentBranch == 'develop') {
+                         // Gestiamo anche il caso in cui GIT_COMMIT potrebbe essere null
+                         def commitHash = env.GIT_COMMIT ?: 'unknown-commit'
+                         def shortCommit = commitHash.length() > 7 ? commitHash.substring(0, 7) : commitHash
+                         env.IMAGE_TAG = "develop-${shortCommit}"
                     } else {
-                        def safeBranchName = env.BRANCH_NAME.replaceAll('[^a-zA-Z0-9.-]', '_')
+                        def safeBranchName = currentBranch.replaceAll('[^a-zA-Z0-9.-]', '_')
                         env.IMAGE_TAG = "${safeBranchName}-${env.BUILD_NUMBER}"
                     }
+                    
+                    echo "Git context: Branch=${currentBranch}, Tag=${env.TAG_NAME}"
                     echo "Docker image tag set to: ${env.IMAGE_TAG}"
                 }
             }
         }
-
         stage('Build and Push Docker Image') {
             steps {
                 script {
