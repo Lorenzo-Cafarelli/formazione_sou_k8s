@@ -69,7 +69,7 @@ pipeline {
                      withKubeConfig([credentialsId: 'k8s-kubeconfig']) {
                         echo "Deploying to Kubernetes with Helm..."
                         sh """
-                            helm upgrade --install flask-app ./charts/flask-app-example \
+                            helm upgrade --install flask-app ./charts/flask-app-chart \
                               --namespace default \
                               --set image.repository=${env.DOCKER_HUB_USER}/${env.IMAGE_NAME} \
                               --set image.tag=${env.IMAGE_TAG} \
