@@ -1,22 +1,20 @@
 pipeline {
     agent {
-        // Impostiamo l'agente corretto che dovrebbe avere Podman
-        label 'podman-agent-01'
+        // Assicurati che il nuovo nodo che hai collegato a Jenkins abbia questa etichetta!
+        label 'docker-agent'
     }
 
     environment {
         DOCKER_HUB_USER = 'lorenzocafarelli'
         IMAGE_NAME = "flask-app-example"
-        // Se il tuo Dockerfile ha multi-stage e vuoi solo un target specifico,
-        // decommenta la riga sotto e aggiungi '--target ${BUILD_TARGET}' al comando build
-        // BUILD_TARGET = 'builder'
+        // ID della credenziale salvata su Jenkins con username/password di Docker Hub
         DOCKERHUB_CRED_ID = 'dockerhub-creds'
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                echo "Clono il codice su agent ..."
+                echo "Cloning repository on docker agent..."
                 checkout scm
             }
         }
@@ -24,23 +22,22 @@ pipeline {
         stage('Set Image Tag') {
             steps {
                 script {
-                    // Gestione più robusta del branch name se non è popolato automaticamente
                     def currentBranch = env.BRANCH_NAME ?: 'unknown'
                     if (currentBranch == 'main') {
                         env.IMAGE_TAG = 'latest'
                     } else {
                         env.IMAGE_TAG = "dev-${env.BUILD_NUMBER}"
                     }
-                    echo "Podman image tag set to: ${env.IMAGE_TAG}"
+                    echo "Docker image tag set to: ${env.IMAGE_TAG}"
                 }
             }
         }
 
-        stage('Build Podman Image') {
+        stage('Build Docker Image') {
             steps {
-                echo "Buildo l'immagine ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} con Podman..."
-                // Usa 'podman build'. Se serve il target, aggiungi: --target ${env.BUILD_TARGET}
-                sh "podman build -t ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} ."
+                echo "Building image ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} with Docker..."
+                // Usa 'docker build'
+                sh "docker build -t ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} ."
             }
         }
 
@@ -52,17 +49,14 @@ pipeline {
                         usernameVariable: 'DOCKER_USERNAME',
                         passwordVariable: 'DOCKER_PASSWORD'
                     )]) {
-                        echo "Logging into Docker Hub and pushing image with Podman..."
+                        echo "Logging into Docker Hub..."
+                        // Login standard Docker
+                        sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
 
-                        // Podman spesso richiede di specificare il registry per il login
-                        sh "echo \$DOCKER_PASSWORD | podman login docker.io -u \$DOCKER_USERNAME --password-stdin"
+                        echo "Pushing image..."
+                        sh "docker push ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
 
-                        // Push dell'immagine. Podman potrebbe richiedere il full path del registry.
-                        // Se fallisce senza 'docker.io/', prova ad aggiungerlo:
-                        // sh "podman push ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} docker.io/${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
-                        sh "podman push ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
-
-                        sh "podman logout docker.io"
+                        sh "docker logout"
                     }
                 }
             }
@@ -70,9 +64,9 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                echo 'Cleaning up local image from agent...'
-                // Usa 'podman rmi' per rimuovere l'immagine locale
-                sh "podman rmi ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} || true" // || true evita che il fallimento del cleanup rompa la pipeline
+                echo 'Cleaning up local image...'
+                // Pulizia con docker rmi
+                sh "docker rmi ${env.DOCKER_HUB_USER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} || true"
             }
         }
     }
