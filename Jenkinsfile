@@ -1,9 +1,9 @@
 pipeline {
-    agent any
+    agent any // Oppure configura un agente specifico se sai quale ha docker
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        // Assicurati di avere questa credenziale su Jenkins se vuoi usare withKubeConfig
+        // Usa credentials() per gestire meglio le password ed evitare il warning di sicurezza
+        DOCKERHUB_CREDS = credentials('dockerhub-creds') 
         // KUBECONFIG_CREDENTIAL_ID = 'k8s-kubeconfig' 
     }
 
@@ -17,36 +17,31 @@ pipeline {
         stage('Set Image Tag') {
             steps {
                 script {
-                    // Assicuriamoci che BRANCH_NAME abbia un valore, anche se di default
-                    def currentBranch = env.BRANCH_NAME ?: 'unknown-branch'
-                    
+                    def currentBranch = env.BRANCH_NAME ?: 'unknown'
                     if (env.TAG_NAME) {
                         env.IMAGE_TAG = env.TAG_NAME
                     } else if (currentBranch == 'main') {
                         env.IMAGE_TAG = 'latest'
-                    } else if (currentBranch == 'develop') {
-                         // Gestiamo anche il caso in cui GIT_COMMIT potrebbe essere null
-                         def commitHash = env.GIT_COMMIT ?: 'unknown-commit'
-                         def shortCommit = commitHash.length() > 7 ? commitHash.substring(0, 7) : commitHash
-                         env.IMAGE_TAG = "develop-${shortCommit}"
                     } else {
-                        def safeBranchName = currentBranch.replaceAll('[^a-zA-Z0-9.-]', '_')
-                        env.IMAGE_TAG = "${safeBranchName}-${env.BUILD_NUMBER}"
+                        // Fallback generico
+                        env.IMAGE_TAG = "build-${env.BUILD_NUMBER}"
                     }
-                    
-                    echo "Git context: Branch=${currentBranch}, Tag=${env.TAG_NAME}"
-                    echo "Docker image tag set to: ${env.IMAGE_TAG}"
+                    echo "Image Tag: ${env.IMAGE_TAG}"
                 }
             }
         }
-        stage('Build and Push Docker Image') {
+
+        stage('Build and Push') {
+            // Se il tuo cluster Jenkins lo supporta, puoi provare a forzare l'uso di un container con docker
+            // agent {
+            //     docker { image 'docker:latest' }
+            // }
             steps {
                 script {
-                    sh """
-                        echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
-                        docker build -t ${DOCKERHUB_CREDENTIALS_USR}/flask-app-example:${IMAGE_TAG} .
-                        docker push ${DOCKERHUB_CREDENTIALS_USR}/flask-app-example:${IMAGE_TAG}
-                    """
+                     // Usa le variabili d'ambiente create da credentials() per sicurezza
+                     sh 'echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin'
+                     sh "docker build -t ${env.DOCKERHUB_CREDS_USR}/flask-app-example:${env.IMAGE_TAG} ."
+                     sh "docker push ${env.DOCKERHUB_CREDS_USR}/flask-app-example:${env.IMAGE_TAG}"
                 }
             }
         }
