@@ -51,5 +51,14 @@ pipeline {
                 }
             }
         }
+	stage('Debug Environment') {
+            steps {
+                  sh 'uname -a'
+                  sh 'cat /etc/os-release'
+                  sh 'find /usr -name podman 2>/dev/null || true'
+                  sh 'find /usr -name buildah 2>/dev/null || true'
+                  sh 'echo $PATH'
+            }
+        }
     }
 }
