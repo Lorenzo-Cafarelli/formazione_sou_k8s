@@ -3,13 +3,13 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        // Assicurati di avere questa credenziale su Jenkins se vuoi usare withKubeConfig
+        // KUBECONFIG_CREDENTIAL_ID = 'k8s-kubeconfig' 
     }
 
     stages {
         stage('Checkout SCM') {
             steps {
-                // Questo step popola automaticamente le variabili
-                // env.BRANCH_NAME, env.TAG_NAME, env.GIT_COMMIT
                 checkout scm
             }
         }
@@ -18,24 +18,15 @@ pipeline {
             steps {
                 script {
                     if (env.TAG_NAME) {
-                        // Caso 1: Build da tag Git
-                        // env.TAG_NAME non è nullo, usiamo quello
                         env.IMAGE_TAG = env.TAG_NAME
                     } else if (env.BRANCH_NAME == 'main') {
-                        // Caso 2: Build da branch master
                         env.IMAGE_TAG = 'latest'
                     } else if (env.BRANCH_NAME == 'develop') {
-                        // Caso 3: Build da branch develop
-                        // Usiamo i primi 7 caratteri dello SHA
                         env.IMAGE_TAG = "develop-${env.GIT_COMMIT.substring(0, 7)}"
                     } else {
-                        // Fallback per altri branch (es. 'feature/login')
-                        // Pulisce il nome (es. 'feature/login' -> 'feature_login')
                         def safeBranchName = env.BRANCH_NAME.replaceAll('[^a-zA-Z0-9.-]', '_')
                         env.IMAGE_TAG = "${safeBranchName}-${env.BUILD_NUMBER}"
                     }
-                    
-                    echo "Git context: Branch=${env.BRANCH_NAME}, Tag=${env.TAG_NAME}"
                     echo "Docker image tag set to: ${env.IMAGE_TAG}"
                 }
             }
@@ -52,11 +43,30 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to K8s') {
+            steps {
+                script {
+                    // Assicurati che il plugin 'Kubernetes CLI' sia installato su Jenkins per usare 'withKubeConfig'
+                    // Se non usi il plugin, devi assicurarti che 'kubectl' e 'helm' siano configurati sull'agente.
+                    withKubeConfig([credentialsId: 'k8s-kubeconfig']) {
+                        sh """
+                            helm upgrade --install flask-app ./formazione_sou_k8s/charts/flask-app-example \
+                              --namespace default \
+                              --create-namespace \
+                              --set image.repository=${DOCKERHUB_CREDENTIALS_USR}/flask-app-example \
+                              --set image.tag=${IMAGE_TAG} \
+                              --wait
+                        """
+                    }
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo "Docker image pushed successfully!"
+            echo "Pipeline completed successfully!"
         }
         failure {
             echo "Pipeline failed. Check the logs."
