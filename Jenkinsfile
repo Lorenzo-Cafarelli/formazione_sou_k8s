@@ -31,21 +31,20 @@ pipeline {
             }
         }
 
-        stage('Build and Push') {
-            // Se il tuo cluster Jenkins lo supporta, puoi provare a forzare l'uso di un container con docker
-            // agent {
-            //     docker { image 'docker:latest' }
-            // }
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                     // Usa le variabili d'ambiente create da credentials() per sicurezza
-                     sh 'echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin'
-                     sh "docker build -t ${env.DOCKERHUB_CREDS_USR}/flask-app-example:${env.IMAGE_TAG} ."
-                     sh "docker push ${env.DOCKERHUB_CREDS_USR}/flask-app-example:${env.IMAGE_TAG}"
+                    // Usa le variabili d'ambiente per il login (più sicuro)
+                    sh 'echo $DOCKERHUB_CREDS_PSW | podman login docker.io -u $DOCKERHUB_CREDS_USR --password-stdin'
+                    
+                    // Costruisci l'immagine
+                    sh "podman build -t ${env.DOCKERHUB_CREDS_USR}/flask-app-example:${env.IMAGE_TAG} ."
+                    
+                    // Fai il push (potrebbe essere necessario specificare docker.io)
+                    sh "podman push ${env.DOCKERHUB_CREDS_USR}/flask-app-example:${env.IMAGE_TAG} docker.io/${env.DOCKERHUB_CREDS_USR}/flask-app-example:${env.IMAGE_TAG}"
                 }
             }
         }
-
         stage('Deploy to K8s') {
             steps {
                 script {
