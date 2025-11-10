@@ -62,6 +62,24 @@ pipeline {
             }
         }
 
+	stage('Deploy to K8s') {
+            steps {
+                script {
+                     // Assicurati di avere la credenziale 'k8s-kubeconfig' configurata su Jenkins!
+                     withKubeConfig([credentialsId: 'k8s-kubeconfig']) {
+                        echo "Deploying to Kubernetes with Helm..."
+                        sh """
+                            helm upgrade --install flask-app ./charts/flask-app-example \
+                              --namespace default \
+                              --set image.repository=${env.DOCKER_HUB_USER}/${env.IMAGE_NAME} \
+                              --set image.tag=${env.IMAGE_TAG} \
+                              --wait
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Cleanup') {
             steps {
                 echo 'Cleaning up local image...'
