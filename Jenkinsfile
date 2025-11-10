@@ -1,22 +1,49 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+    }
+
     stages {
-        stage('Debug Info') {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Set Image Tag') {
             steps {
                 script {
-                    echo "=== System Info ==="
-                    sh 'uname -a'
-                    sh 'cat /etc/os-release'
-                    echo "=== Checking for Container Tools ==="
-                    // Usa 'command -v' per vedere se i comandi esistono nel PATH
-                    sh 'command -v docker || echo "Docker not found"'
-                    sh 'command -v podman || echo "Podman not found"'
-                    sh 'command -v buildah || echo "Buildah not found"'
-                    echo "=== Checking PATH ==="
-                    sh 'echo $PATH'
+                    if (env.BRANCH_NAME == 'main') {
+                        env.IMAGE_TAG = 'latest'
+                    } else {
+                        env.IMAGE_TAG = "dev-${env.BUILD_NUMBER}"
+                    }
+                    echo "Docker image tag set to: ${env.IMAGE_TAG}"
                 }
             }
+        }
+
+        stage('Build and Push Docker Image') {
+            steps {
+                script {
+                    sh """
+                        echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
+                        docker build -t ${DOCKERHUB_CREDENTIALS_USR}/flask-app-example:${IMAGE_TAG} .
+                        docker push ${DOCKERHUB_CREDENTIALS_USR}/flask-app-example:${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Docker image pushed successfully!"
+        }
+        failure {
+            echo "Pipeline failed. Check the logs."
         }
     }
 }
