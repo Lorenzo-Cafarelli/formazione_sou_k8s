@@ -1,0 +1,114 @@
+- name: Install Docker and Jenkins Environment
+  hosts: all
+  become: true
+    
+  tasks:   
+    - name: Install system packages
+      yum:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+          - python3
+          - python3-pip
+          - git
+        state: latest
+        
+    - name: Install Python dependencies
+      pip:
+        name: 
+          - requests
+          - docker  # FONDAMENTALE
+        state: present
+        
+    - name: Add Docker repository
+      yum_repository:
+        name: docker-ce
+        description: Docker CE repository
+        baseurl: https://download.docker.com/linux/rhel/9/$basearch/stable
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: https://download.docker.com/linux/rhel/gpg
+        
+    - name: Install Docker Engine
+      yum:
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: latest
+        
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+        
+    - name: Create Docker network 
+      docker_network:
+        name: primo_net
+        ipam_config:
+          - subnet: 192.168.2.0/24
+            gateway: 192.168.2.1
+            
+    - name: Pull Jenkins Images
+      community.docker.docker_image:
+        name: "{{ item }}"
+        source: pull
+      with_items:
+        - jenkins/jenkins:lts
+        - jenkins/inbound-agent
+
+    - name: Create Jenkins Master Container (ContainerM)
+      docker_container:
+        name: ContainerM
+        image: jenkins/jenkins:lts
+        state: started
+        restart_policy: always
+        networks:
+          - name: primo_net
+            ipv4_address: "192.168.2.2"
+        ports:
+          - "8080:8080"
+          - "50000:50000"
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+          - jenkins_home:/var/jenkins_home
+     
+    - name: Create Jenkins Slave Container (ContainerS)
+      docker_container:
+        name: ContainerS
+        image: jenkins/inbound-agent
+        state: started
+        restart_policy: always
+        networks:
+          - name: primo_net
+            ipv4_address: "192.168.2.3"
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+        env:
+          JENKINS_URL: "http://192.168.2.2:8080/"
+          JENKINS_AGENT_NAME: "ContainerS"
+          JENKINS_AGENT_WORKDIR: "/home/jenkins"
+          JENKINS_SECRET: "d1049f9ee04c298218806507000823704fc2f306e3c4d9d2777b8dcee0ddcd27"
+
+    - name: Install curl in Slave
+      community.docker.docker_container_exec:
+        container: ContainerS
+        command: "bash -c 'user=root apt-get update && apt-get install -y curl'"
+        user: root
+      ignore_errors: yes 
+
+    - name: Install Kubectl in Slave
+      community.docker.docker_container_exec:
+        container: ContainerS
+        command: "bash -c 'curl -LO https://dl.k8s.io/release/v1.27.0/bin/linux/amd64/kubectl && chmod +x kubectl && mv kubectl /usr/local/bin/'"
+        user: root
+      ignore_errors: yes
+
+    - name: Install Helm in Slave
+      community.docker.docker_container_exec:
+        container: ContainerS
+        command: "bash -c 'curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh'"
+        user: root
+      ignore_errors: yes

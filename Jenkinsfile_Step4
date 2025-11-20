@@ -1,0 +1,49 @@
+pipeline {
+    agent {
+        [cite_start]// Esegue tutto sul nodo Slave che ha Helm installato [cite: 2]
+        label 'ContainerS'
+    }
+
+    // Definisce i parametri di input richiesti dall'esercizio
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Inserisci il tag dell\'immagine da rilasciare (es. feat-35c0b59)')
+    }
+
+    environment {
+        // Definisce l'ID della credenziale che abbiamo appena creato
+        KUBECONFIG_ID = 'minikube-secret'
+    }
+
+    stages {
+
+        stage('Clone repo') {
+            steps {
+                // Scarica il tuo repository corretto
+                git branch: 'main', url: 'https://github.com/Lorenzo-Cafarelli/provaTrack_2.git'
+            }
+        }
+
+        stage('Deploy Helm chart') {
+            steps {
+                // Inietta il file kubeconfig temporaneamente dentro il container
+                withCredentials([file(credentialsId: env.KUBECONFIG_ID, variable: 'KUBECONFIG')]) {
+                    script {
+                        // 1. Debug: Verifica che Helm ci sia
+                        sh 'helm version'
+
+                        // 2. Esegui l'upgrade/installazione
+                        // --create-namespace: crea il namespace "formazione_sou" se non esiste
+                        // --set image.tag: usa il parametro inserito dall'utente (params.IMAGE_TAG)
+                        // Path: ./formazione_sou_k8s/flask (il percorso corretto del tuo chart)
+                        sh """
+                            helm upgrade --install my-flask-app ./formazione_sou_k8s/flask \
+                            --namespace formazione_sou \
+                            --create-namespace \
+                            --set image.tag=${params.IMAGE_TAG}
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
