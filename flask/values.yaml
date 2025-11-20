@@ -52,7 +52,7 @@ securityContext: {}
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   type: NodePort
-  port: 80
+  port: 5000
   nodePort: 31000
   externalTrafficPolicy:
   internalTrafficPolicy:

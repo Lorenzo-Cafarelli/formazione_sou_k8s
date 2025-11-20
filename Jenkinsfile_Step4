@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        [cite_start]// Esegue tutto sul nodo Slave che ha Helm installato [cite: 2]
+        // Esegue tutto sul nodo Slave che ha Helm installato [cite: 2]
         label 'ContainerS'
     }
 
@@ -19,7 +19,7 @@ pipeline {
         stage('Clone repo') {
             steps {
                 // Scarica il tuo repository corretto
-                git branch: 'main', url: 'https://github.com/Lorenzo-Cafarelli/provaTrack_2.git'
+                git branch: 'main', url: 'https://github.com/Lorenzo-Cafarelli/formazione_sou_k8s.git'
             }
         }
 
