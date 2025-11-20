@@ -6,7 +6,7 @@ pipeline {
 
     // Definisce i parametri di input richiesti dall'esercizio
     parameters {
-        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Inserisci il tag dell\'immagine da rilasciare: (es. feat-35c0b59)')
+        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Inserisci il tag dell\'immagine da rilasciare (es. feat-35c0b59)')
     }
 
     environment {
