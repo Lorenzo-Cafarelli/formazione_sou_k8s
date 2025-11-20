@@ -3,6 +3,20 @@
   become: true
     
   tasks:   
+    - name: Put SELinux in permissive mode (Config File)
+      lineinfile:
+        path: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: 'SELINUX=permissive'
+      
+    - name: Disable SELinux immediately
+      command: setenforce 0
+      ignore_errors: yes
+
+    - name: Disable SELinux immediately
+      command: setenforce 0
+      ignore_errors: yes
+
     - name: Install system packages
       yum:
         name:
@@ -18,7 +32,7 @@
       pip:
         name: 
           - requests
-          - docker  # FONDAMENTALE
+          - docker
         state: present
         
     - name: Add Docker repository
@@ -59,6 +73,10 @@
         - jenkins/jenkins:lts
         - jenkins/inbound-agent
 
+    
+    - name: Ensure jenkins_data directory exists
+      command: mkdir -p /vagrant/jenkins_data
+
     - name: Create Jenkins Master Container (ContainerM)
       docker_container:
         name: ContainerM
@@ -73,7 +91,7 @@
           - "50000:50000"
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
-          - jenkins_home:/var/jenkins_home
+          - /vagrant/jenkins_data:/var/jenkins_home
      
     - name: Create Jenkins Slave Container (ContainerS)
       docker_container:
@@ -81,11 +99,13 @@
         image: jenkins/inbound-agent
         state: started
         restart_policy: always
+        user: root
         networks:
           - name: primo_net
             ipv4_address: "192.168.2.3"
         volumes:
           - /var/run/docker.sock:/var/run/docker.sock
+          - /usr/bin/docker:/usr/bin/docker
         env:
           JENKINS_URL: "http://192.168.2.2:8080/"
           JENKINS_AGENT_NAME: "ContainerS"
@@ -95,7 +115,7 @@
     - name: Install curl in Slave
       community.docker.docker_container_exec:
         container: ContainerS
-        command: "bash -c 'user=root apt-get update && apt-get install -y curl'"
+        command: "bash -c 'apt-get update && apt-get install -y curl'"
         user: root
       ignore_errors: yes 
 

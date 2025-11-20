@@ -2,7 +2,7 @@ Vagrant.configure("2") do |config|
 
   # Configurazione VMware Fusion (Apple Silicon / Intel Mac)
   config.vm.provider "vmware_desktop" do |v|
-    v.gui = false
+    v.gui = false     # Disabilita l'interfaccia grafica
     v.allowlist_verified = true
   end
 
@@ -12,6 +12,8 @@ Vagrant.configure("2") do |config|
   else
     config.vm.box = "bento/rockylinux-9"
   end
+
+  config.vm.synced_folder ".", "/vagrant"
 
   config.vm.define "macchina" do |macchina|
     macchina.vm.hostname = "macchina"
