@@ -36,7 +36,7 @@ pipeline {
                         // --set image.tag: usa il parametro inserito dall'utente (params.IMAGE_TAG)
                         // Path: ./formazione_sou_k8s/flask (il percorso corretto del tuo chart)
                         sh """
-                            helm upgrade --install my-flask-app ./formazione_sou_k8s/flask \
+                            helm upgrade --install my-flask-app ./flask \
                             --namespace formazione_sou \
                             --create-namespace \
                             --set image.tag=${params.IMAGE_TAG}
