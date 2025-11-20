@@ -37,7 +37,7 @@ pipeline {
                         // Path: ./formazione_sou_k8s/flask (il percorso corretto del tuo chart)
                         sh """
                             helm upgrade --install my-flask-app ./flask \
-                            --namespace formazione_sou \
+                            --namespace formazione-sou \
                             --create-namespace \
                             --set image.tag=${params.IMAGE_TAG}
                         """
