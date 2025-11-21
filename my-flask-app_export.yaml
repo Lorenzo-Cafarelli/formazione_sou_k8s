@@ -2,7 +2,7 @@ api_version: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    deployment.kubernetes.io/revision: '2'
+    deployment.kubernetes.io/revision: '3'
     meta.helm.sh/release-name: my-flask-app
     meta.helm.sh/release-namespace: formazione-sou
   creation_timestamp: 2025-11-20 15:16:48+00:00
@@ -10,7 +10,7 @@ metadata:
   deletion_timestamp: null
   finalizers: null
   generate_name: null
-  generation: 2
+  generation: 3
   labels:
     app.kubernetes.io/instance: my-flask-app
     app.kubernetes.io/managed-by: Helm
@@ -86,7 +86,16 @@ metadata:
                   f:periodSeconds: {}
                   f:successThreshold: {}
                   f:timeoutSeconds: {}
-                f:resources: {}
+                f:resources:
+                  .: {}
+                  f:limits:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
+                  f:requests:
+                    .: {}
+                    f:cpu: {}
+                    f:memory: {}
                 f:securityContext: {}
                 f:terminationMessagePath: {}
                 f:terminationMessagePolicy: {}
@@ -100,7 +109,7 @@ metadata:
     manager: helm
     operation: Update
     subresource: null
-    time: 2025-11-21 10:11:24+00:00
+    time: 2025-11-21 10:23:09+00:00
   - api_version: apps/v1
     fields_type: FieldsV1
     fields_v1:
@@ -133,11 +142,11 @@ metadata:
     manager: kube-controller-manager
     operation: Update
     subresource: status
-    time: 2025-11-21 10:11:24+00:00
+    time: 2025-11-21 10:33:12+00:00
   name: my-flask-app
   namespace: formazione-sou
   owner_references: null
-  resource_version: '67210'
+  resource_version: '68445'
   self_link: null
   uid: b94ae855-c4b3-42be-afe8-99a0643f9742
 spec:
@@ -231,8 +240,12 @@ spec:
         resize_policy: null
         resources:
           claims: null
-          limits: null
-          requests: null
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
         restart_policy: null
         restart_policy_rules: null
         security_context:
@@ -317,13 +330,13 @@ status:
     reason: MinimumReplicasUnavailable
     status: 'False'
     type: Available
-  - last_transition_time: 2025-11-21 10:11:24+00:00
-    last_update_time: 2025-11-21 10:11:24+00:00
-    message: ReplicaSet "my-flask-app-6598fcc478" is progressing.
-    reason: ReplicaSetUpdated
-    status: 'True'
+  - last_transition_time: 2025-11-21 10:33:12+00:00
+    last_update_time: 2025-11-21 10:33:12+00:00
+    message: ReplicaSet "my-flask-app-5479665d58" has timed out progressing.
+    reason: ProgressDeadlineExceeded
+    status: 'False'
     type: Progressing
-  observed_generation: 2
+  observed_generation: 3
   ready_replicas: null
   replicas: 2
   terminating_replicas: null
