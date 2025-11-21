@@ -16,7 +16,7 @@ replicaCount: 1
 image:
   repository: lorenzocafarelli/flask-app-example
   pullPolicy: Always
-  tag: "latest"
+  tag: "feat-75e7fd8"
 
 imagePullSecrets: []
 nameOverride: ""
