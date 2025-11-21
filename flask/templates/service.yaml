@@ -5,12 +5,12 @@ metadata:
   labels:
     {{- include "custom.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.type }} # Prende 'ClusterIP' dal values.yaml
   ports:
-    - port: 80 
-      targetPort: 8000
-      nodePort: 31000
+    - port: {{ .Values.service.port }} # Prende '5000' dal values.yaml
+      targetPort: 5000             # La porta interna del container Flask
       protocol: TCP
+      name: http
+      # nodePort rimosso perché proibito in ClusterIP
   selector:
     {{- include "custom.selectorLabels" . | nindent 4 }}
-#    app: app.py
