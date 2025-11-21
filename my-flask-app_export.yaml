@@ -2,7 +2,7 @@ api_version: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    deployment.kubernetes.io/revision: '1'
+    deployment.kubernetes.io/revision: '2'
     meta.helm.sh/release-name: my-flask-app
     meta.helm.sh/release-namespace: formazione-sou
   creation_timestamp: 2025-11-20 15:16:48+00:00
@@ -10,7 +10,7 @@ metadata:
   deletion_timestamp: null
   finalizers: null
   generate_name: null
-  generation: 1
+  generation: 2
   labels:
     app.kubernetes.io/instance: my-flask-app
     app.kubernetes.io/managed-by: Helm
@@ -56,6 +56,17 @@ metadata:
                 .: {}
                 f:image: {}
                 f:imagePullPolicy: {}
+                f:livenessProbe:
+                  .: {}
+                  f:failureThreshold: {}
+                  f:httpGet:
+                    .: {}
+                    f:path: {}
+                    f:port: {}
+                    f:scheme: {}
+                  f:periodSeconds: {}
+                  f:successThreshold: {}
+                  f:timeoutSeconds: {}
                 f:name: {}
                 f:ports:
                   .: {}
@@ -64,6 +75,17 @@ metadata:
                     f:containerPort: {}
                     f:name: {}
                     f:protocol: {}
+                f:readinessProbe:
+                  .: {}
+                  f:failureThreshold: {}
+                  f:httpGet:
+                    .: {}
+                    f:path: {}
+                    f:port: {}
+                    f:scheme: {}
+                  f:periodSeconds: {}
+                  f:successThreshold: {}
+                  f:timeoutSeconds: {}
                 f:resources: {}
                 f:securityContext: {}
                 f:terminationMessagePath: {}
@@ -78,7 +100,7 @@ metadata:
     manager: helm
     operation: Update
     subresource: null
-    time: 2025-11-20 15:16:48+00:00
+    time: 2025-11-21 10:11:24+00:00
   - api_version: apps/v1
     fields_type: FieldsV1
     fields_v1:
@@ -111,11 +133,11 @@ metadata:
     manager: kube-controller-manager
     operation: Update
     subresource: status
-    time: 2025-11-20 15:26:49+00:00
+    time: 2025-11-21 10:11:24+00:00
   name: my-flask-app
   namespace: formazione-sou
   owner_references: null
-  resource_version: '61630'
+  resource_version: '67210'
   self_link: null
   uid: b94ae855-c4b3-42be-afe8-99a0643f9742
 spec:
@@ -167,7 +189,22 @@ spec:
         image: lorenzocafarelli/flask-app-example:latest
         image_pull_policy: Always
         lifecycle: null
-        liveness_probe: null
+        liveness_probe:
+          _exec: null
+          failure_threshold: 3
+          grpc: null
+          http_get:
+            host: null
+            http_headers: null
+            path: /
+            port: 5000
+            scheme: HTTP
+          initial_delay_seconds: null
+          period_seconds: 10
+          success_threshold: 1
+          tcp_socket: null
+          termination_grace_period_seconds: null
+          timeout_seconds: 1
         name: flask
         ports:
         - container_port: 5000
@@ -175,7 +212,22 @@ spec:
           host_port: null
           name: http
           protocol: TCP
-        readiness_probe: null
+        readiness_probe:
+          _exec: null
+          failure_threshold: 3
+          grpc: null
+          http_get:
+            host: null
+            http_headers: null
+            path: /
+            port: 5000
+            scheme: HTTP
+          initial_delay_seconds: null
+          period_seconds: 10
+          success_threshold: 1
+          tcp_socket: null
+          termination_grace_period_seconds: null
+          timeout_seconds: 1
         resize_policy: null
         resources:
           claims: null
@@ -265,15 +317,15 @@ status:
     reason: MinimumReplicasUnavailable
     status: 'False'
     type: Available
-  - last_transition_time: 2025-11-20 15:26:49+00:00
-    last_update_time: 2025-11-20 15:26:49+00:00
-    message: ReplicaSet "my-flask-app-7598c4698" has timed out progressing.
-    reason: ProgressDeadlineExceeded
-    status: 'False'
+  - last_transition_time: 2025-11-21 10:11:24+00:00
+    last_update_time: 2025-11-21 10:11:24+00:00
+    message: ReplicaSet "my-flask-app-6598fcc478" is progressing.
+    reason: ReplicaSetUpdated
+    status: 'True'
     type: Progressing
-  observed_generation: 1
+  observed_generation: 2
   ready_replicas: null
-  replicas: 1
+  replicas: 2
   terminating_replicas: null
-  unavailable_replicas: 1
+  unavailable_replicas: 2
   updated_replicas: 1
