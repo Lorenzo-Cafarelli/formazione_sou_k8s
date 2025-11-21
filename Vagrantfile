@@ -4,6 +4,8 @@ Vagrant.configure("2") do |config|
   config.vm.provider "vmware_desktop" do |v|
     v.gui = false     # Disabilita l'interfaccia grafica
     v.allowlist_verified = true
+    v.vmx["memsize"] = "4096"  # 4GB di RAM
+    v.vmx["numvcpus"] = "2"    # 2 CPU
   end
 
   # Selezione automatica Box
